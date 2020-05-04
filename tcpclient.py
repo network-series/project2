@@ -4,88 +4,92 @@ import pickle
 import time
 import os
 import zipfile
+import sys
 
-server_ip = '192.168.1.2'
-server_port = 5200
 file_dir = os.path.dirname(os.path.abspath(__file__))
 header_struct = struct.Struct('i1024s')
 data_struct = struct.Struct('1024s')
 
 
 def print_file(header):
-    file_name = header['file_name']
     file_size = header['file_size']
     file_ctime = header['file_ctime']
     file_atime = header['file_atime']
     file_mtime = header['file_mtime']
-    print('文件名：%s' % file_name)
     print('文件大小：%s' % file_size)
     print('文件创建时间：%s' % time.strftime("%Y/%m/%d %H:%M:%S", time.localtime(file_ctime)))
     print('文件最近访问时间：%s' % time.strftime("%Y/%m/%d %H:%M:%S", time.localtime(file_atime)))
     print('文件最近修改时间：%s' % time.strftime("%Y/%m/%d %H:%M:%S", time.localtime(file_mtime)))
 
 
-def print_progress(percent, width=50):
-    if percent >= 100:
-        percent = 100
-    # 字符串拼接的嵌套使用
-    show_str = ('[%%-%ds]' % width) % (int(width * percent / 100) * '>')
-    print('\r%s %d%%' % (show_str, percent), end='')
-
-
-def get(client):
-    # 接受序列化的header数据包
-    packed_header = client.recv(1024 + 4)
-    # 解包得到序列化的header的长度和header正文
-    header_size, header_s = header_struct.unpack(packed_header)
-    # 大小为0则说明查无此文件
-    if header_size == 0:
-        return False
-    # 否则开始传
+def send(file_name, client):
+    file_path = os.path.join(file_dir, file_name)
+    if os.path.isfile(file_path) == 0:
+        client.send(header_struct.pack(*(0, b'0')))
     else:
-        # 反序列化得到header正文
-        header = pickle.loads(header_s)
-        file_name = header['file_name']
+        # 文件头
+        header = {
+            'file_name': file_name,
+            'file_size': os.path.getsize(file_path),
+            'file_ctime': os.path.getctime(file_path),
+            'file_atime': os.path.getatime(file_path),
+            'file_mtime': os.path.getmtime(file_path)
+        }
         file_size = header['file_size']
-        print_file(header)
-        with open('%s\\%s' % (file_dir, 'x.zip'), 'wb') as f:
-            recv_size = 0
-            while recv_size < file_size:
-                res = client.recv(1024)
-                f.write(res)
-                recv_size += len(res)
-                recv_per = int(recv_size / file_size * 100)
-                print_progress(recv_per)
-        return True
+        if file_size == 0:
+            return False
+        else:
+            # 序列化header
+            header_str = pickle.dumps(header)
+            # 把序列化的header长度和header正文打包发送
+            client.send(header_struct.pack(*(len(header_str), header_str)))
+            print_file(header)
+            with open(file_path, 'rb') as f:
+                for line in f:
+                    client.send(line)
+            return True
 
 
-def unzip_file(zip_src, dst_dir):
-    zipfile.is_zipfile(zip_src)
-    fz = zipfile.ZipFile(zip_src, 'r')
+def zipDir(dirpath, outFullName):
+    """
+    压缩指定文件夹
+    :param dirpath: 目标文件夹路径
+    :param outFullName: 压缩文件保存路径+xxxx.zip
+    :return: 无
+    """
+    zip = zipfile.ZipFile(outFullName, "w", zipfile.ZIP_DEFLATED)
+    for path, dirnames, filenames in os.walk(dirpath):
+        # 去掉目标跟路径，只对目标文件夹下边的文件及文件夹进行压缩
+        fpath = path.replace(dirpath, '')
 
-    for file in fz.namelist():
-        fz.extract(file, dst_dir)
+        for filename in filenames:
+            zip.write(os.path.join(path, filename), os.path.join(fpath, filename))
+    zip.close()
 
 
-def run():
+def run(file_name, server_ip, server_port):
     client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     client.connect((server_ip, server_port))
     while True:
-        file_name = input("你想传输的文件叫什么名字呢[输入end断开连接]: ").strip()
-        client.send(file_name.encode('utf-8'))
+        # file_name = input("你想传输的文件叫什么名字呢[输入end断开连接]: ").strip()
+        if file_name == 'end':
+            break
+        zipDir(file_name, file_name + '.zip')
+        # client.send(file_name.encode('utf-8'))
         start = time.time()
         print('-' * 80)
-        if not get(client):
+        file = file_name + '.zip'
+        if not send(file_name, client):
             print('文件名错误')
         else:
             end = time.time()
             print('\n传输完成')
             print('传输时间：', end - start)
         print('-' * 80)
-        unzip_file(r"E:\vs\pycharm\项目二\x.zip", r"E:\vs\pycharm\项目二")
-        os.remove(r"E:\vs\pycharm\项目二\x.zip")
+        os.remove(file_name + '.zip')
+        break
     client.close()
 
 
 if __name__ == '__main__':
-    run()
+    run(sys.argv[1],sys.argv[2],int(sys.argv[3]))
