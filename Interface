@@ -1,0 +1,79 @@
+class Application(Frame):
+    def __init__(self, master=None):
+        Frame.__init__(self, master)
+        self.master.title('文件传输接收软件')
+        screenwidth = self.winfo_screenwidth()
+        screenheight = self.winfo_screenheight()
+        #设置界面宽度为530，高度为365像素，并且基于屏幕居中
+        width = 530
+        height = 365
+        size = '%dx%d+%d+%d' % (width, height, (screenwidth - width) / 2, (screenheight - height) / 2)
+        self.master.geometry(size)
+        self.pack()
+        self.create_widgets()
+
+
+    def create_widgets(self):
+        Label(self, text="").grid(row=0, pady=5, columnspan=3)
+
+        self.port = StringVar()
+        Label(self, text="端口号：").grid(row=3, sticky='W', pady=5)
+        Entry(self, textvariable=self.port, width=9).grid(row=3, column=1, sticky='W')
+
+        self.ip = StringVar()
+        Label(self, text="ip地址：").grid(row=5, sticky='W', pady=5)
+        Entry(self, textvariable=self.ip, width=40).grid(row=5, column=1, sticky='W')
+
+        self.filename_out = StringVar()
+        Label(self, text="输入保存的地址：").grid(row=8, column=0, sticky='W', pady=5)
+        Entry(self, textvariable=self.filename_out, width=40).grid(row=8, column=1, sticky='W')
+        Button(self,text='确定',width=5,height=2, command=self.quit).grid(row=14,column=1,sticky='W',padx=100)
+        
+        if __name__ == '__main__':
+    app = Application()
+    app.mainloop()
+    path_out = str(app.filename_out.get())
+    
+    
+    
+    import tkinter.messagebox as messagebox
+from tkinter import ttk
+from tkinter import *
+import tkinter.filedialog
+class Application(Frame):
+    def __init__(self, master=None):
+        Frame.__init__(self, master)
+        self.master.title('文件传输发送软件')
+        screenwidth = self.winfo_screenwidth()
+        screenheight = self.winfo_screenheight()
+        #设置界面宽度为530，高度为365像素，并且基于屏幕居中
+        width = 530
+        height = 365
+        size = '%dx%d+%d+%d' % (width, height, (screenwidth - width) / 2, (screenheight - height) / 2)
+        self.master.geometry(size)
+        self.pack()
+        self.create_widgets()
+
+
+    def create_widgets(self):
+        Label(self, text="").grid(row=0, pady=5, columnspan=3)
+
+        self.port = StringVar()
+        Label(self, text="端口号：").grid(row=3, sticky='W', pady=5)
+        Entry(self, textvariable=self.port, width=9).grid(row=3, column=1, sticky='W')
+
+        self.ip = StringVar()
+        Label(self, text="ip地址：").grid(row=5, sticky='W', pady=5)
+        Entry(self, textvariable=self.ip, width=40).grid(row=5, column=1, sticky='W')
+
+        self.filename_in= StringVar()
+        Label(self, text="输入上传的文件夹：").grid(row=8, column=0, sticky='W', pady=5)
+        Entry(self, textvariable=self.filename_in, width=40).grid(row=8, column=1, sticky='W')
+        Button(self,text='确定',width=5,height=2, command=self.quit).grid(row=14,column=1,sticky='W',padx=100)
+        if __name__ == '__main__':
+    app = Application()
+    app.mainloop()
+    filenamein=str(app.filename_in.get())
+    run(filenamein, app.ip.get(), int(app.port.get()))
+
+    run(path_out, app.ip.get(), int(app.port.get()))
