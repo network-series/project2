@@ -6,17 +6,20 @@ import os
 import zipfile
 import sys
 
+# server_ip = '192.168.1.2'
+# server_port = 5200
 file_dir = os.path.dirname(os.path.abspath(__file__))
 header_struct = struct.Struct('i1024s')
 data_struct = struct.Struct('1024s')
 
 
 def print_file(header):
+    file_name = header['file_name']
     file_size = header['file_size']
     file_ctime = header['file_ctime']
     file_atime = header['file_atime']
     file_mtime = header['file_mtime']
-    print('文件大小：%s' % file_size)
+    # print('文件名：%s' % file_name)
     print('文件创建时间：%s' % time.strftime("%Y/%m/%d %H:%M:%S", time.localtime(file_ctime)))
     print('文件最近访问时间：%s' % time.strftime("%Y/%m/%d %H:%M:%S", time.localtime(file_atime)))
     print('文件最近修改时间：%s' % time.strftime("%Y/%m/%d %H:%M:%S", time.localtime(file_mtime)))
@@ -70,26 +73,22 @@ def zipDir(dirpath, outFullName):
 def run(file_name, server_ip, server_port):
     client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     client.connect((server_ip, server_port))
-    while True:
-        # file_name = input("你想传输的文件叫什么名字呢[输入end断开连接]: ").strip()
-        if file_name == 'end':
-            break
-        zipDir(file_name, file_name + '.zip')
-        # client.send(file_name.encode('utf-8'))
-        start = time.time()
-        print('-' * 80)
-        file = file_name + '.zip'
-        if not send(file_name, client):
-            print('文件名错误')
-        else:
-            end = time.time()
-            print('\n传输完成')
-            print('传输时间：', end - start)
-        print('-' * 80)
-        os.remove(file_name + '.zip')
-        break
+    # file_name = input("你想传输的文件叫什么名字呢[输入end断开连接]: ").strip()
+
+    start = time.time()
+    print('-' * 80)
+    zipDir(file_name, file_name + '.zip')
+    file = file_name + '.zip'
+    if not send(file, client):
+        print('文件名错误')
+    else:
+        end = time.time()
+        print('\n传输完成')
+        print('传输时间：', end - start)
+    print('-' * 80)
+    os.remove(file)
     client.close()
 
 
 if __name__ == '__main__':
-    run(sys.argv[1],sys.argv[2],int(sys.argv[3]))
+    run(sys.argv[1], sys.argv[2], int(sys.argv[3]))
